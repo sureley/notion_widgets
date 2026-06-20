@@ -16,7 +16,7 @@
 
     body {
       font-family: "Lexend", sans-serif;
-      background-color: #362a2b;
+      background-color: #191919;
       color: #e5ebf3;
     }
 
@@ -43,7 +43,7 @@
     /* This forces all slides to show the full image */
     .slide {
       background-size: contain !important;
-      background-color: #362a2b; /* Matches your background so the empty space isn't distracting */
+      background-color: #; /* Matches your background so the empty space isn't distracting */
     }
 
     /* Note: The hardcoded background images were removed from here */
@@ -72,7 +72,7 @@
 
     .buttons button:hover {
       background-color: #e5ebf3;
-      color: #362a2b;
+      color: #191919;
     }
 
     @media (min-width: 640px) and (min-height: 640px) {
@@ -139,7 +139,7 @@
           if (index === 0) slideDiv.classList.add("current");
           
           // Apply the background image dynamically
-          slideDiv.style.background = `url("${img.name}") no-repeat center top/contain #362a2b`;
+          slideDiv.style.background = `url("${img.name}") no-repeat center top/contain #191919`;
           slider.appendChild(slideDiv);
         });
 
