@@ -16,7 +16,7 @@
 
     body {
       font-family: "Lexend", sans-serif;
-      background-color: #362a2b;
+      background-color: #191919;
       color: #e5ebf3;
     }
 
@@ -46,7 +46,7 @@
     .slide {
       /* Uses contain instead of cover for scaling, reinforced with background color so empty space matches */
       background-size: contain !important; 
-      background-color: #362a2b; /* Matches your background theme */
+      background-color: #191919; /* Matches your background theme */
     }
     /* ---------------------------------------------------- */
 
@@ -74,7 +74,7 @@
 
     .buttons button:hover {
       background-color: #e5ebf3;
-      color: #362a2b;
+      color: #191919;
     }
 
     @media (min-width: 640px) and (min-height: 640px) {
@@ -156,10 +156,10 @@
           // Make the first image visible immediately
           if (index === 0) slideDiv.classList.add("current");
           
-          // Apply the background image dynamically - *CRITICAL:* use /contain #362a2b shorthand here as well
+          // Apply the background image dynamically - *CRITICAL:* use /contain #191919 shorthand here as well
           // The containment ensures original size scaling without zoom for Notion, and background color fills empty space
           // Use img.path to get the full path including folder (e.g., art/1.png) for image source
-          slideDiv.style.background = `url("${img.path}") no-repeat center top / contain #362a2b`;
+          slideDiv.style.background = `url("${img.path}") no-repeat center top / contain #191919`;
           slider.appendChild(slideDiv);
         });
 
