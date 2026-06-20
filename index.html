@@ -119,12 +119,11 @@
         // 2. Filter out anything that isn't an image file
         const images = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
 
-        // 3. Sort them numerically so 1.png comes before 2.jpg, etc.
-        images.sort((a, b) => {
-          const numA = parseInt(a.name) || 0;
-          const numB = parseInt(b.name) || 0;
-          return numA - numB;
-        });
+        // 3. Randomize (shuffle) the order of the images
+        for (let i = images.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [images[i], images[j]] = [images[j], images[i]]; // Swap elements
+        }
 
         // 4. Inject each image into the HTML
         images.forEach((img, index) => {
