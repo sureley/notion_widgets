@@ -37,7 +37,12 @@
       transition: opacity 0.4s ease-in-out;
     }
 
-    .slide.current {
+    .slide.current 
+    /* This forces all slides to show the full image */
+    .slide {
+      background-size: contain !important;
+      background-color: #362a2b; /* Matches your background so the empty space isn't distracting */
+    }{
       opacity: 1;
     }
 
