@@ -3,101 +3,71 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Dynamic sequential Image Slider with containment Fix for Notion</title>
+  <title>Curated Image Slider</title>
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css'>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap");
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Lexend", sans-serif; background-color: #362a2b; color: #e5ebf3; }
 
-    body {
-      font-family: "Lexend", sans-serif;
-      background-color: #191919;
-      color: #e5ebf3;
-    }
-
-    .slider {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-    }
-
+    .slider { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
     .slide {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      transition: opacity 0.4s ease-in-out;
-    }
-
-    .slide.current {
-      opacity: 1;
-    }
-
-    /* --- Synthesized original size fix for Notion --- */
-    /* This forces all dynamically generated slides to show the full image without zooming */
-    .slide {
-      /* Uses contain instead of cover for scaling, reinforced with background color so empty space matches */
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0; transition: opacity 0.4s ease-in-out;
       background-size: contain !important; 
-      background-color: #191919; /* Matches your background theme */
+      background-color: #362a2b;
     }
-    /* ---------------------------------------------------- */
+    .slide.current { opacity: 1; }
 
-    .buttons button#prev {
+    /* --- Toggle Switch UI --- */
+    .toggle-container {
       position: absolute;
-      top: 50%;
-      left: 1rem;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 100;
+      background: rgba(54, 42, 43, 0.8);
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid #e5ebf3;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
     }
-
-    .buttons button#next {
-      position: absolute;
-      top: 50%;
-      right: 1rem;
+    
+    .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider-toggle {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #665c5d; transition: .4s; border-radius: 20px;
     }
+    .slider-toggle:before {
+      position: absolute; content: ""; height: 14px; width: 14px;
+      left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .slider-toggle { background-color: #4CAF50; }
+    input:checked + .slider-toggle:before { transform: translateX(20px); }
 
+    .buttons button#prev { position: absolute; top: 50%; left: 1rem; z-index: 10; }
+    .buttons button#next { position: absolute; top: 50%; right: 1rem; z-index: 10; }
     .buttons button {
-      border: 2px solid #e5ebf3;
-      background-color: transparent;
-      color: #e5ebf3;
-      cursor: pointer;
-      padding: 13px 15px;
-      border-radius: 50%;
-      outline: none;
+      border: 2px solid #e5ebf3; background-color: rgba(54, 42, 43, 0.5); color: #e5ebf3;
+      cursor: pointer; padding: 13px 15px; border-radius: 50%; outline: none; transition: 0.2s;
     }
-
-    .buttons button:hover {
-      background-color: #e5ebf3;
-      color: #191919;
-    }
-
-    @media (min-width: 640px) and (min-height: 640px) {
-      .slide .content {
-        bottom: 70px;
-        left: -600px;
-        width: 600px;
-        padding: 2rem;
-        line-height: 1.6;
-      }
-
-      .slide .content h1 {
-        font-size: 2rem;
-      }
-
-      .slide.current .content {
-        transform: translateX(600px);
-      }
-    }
+    .buttons button:hover { background-color: #e5ebf3; color: #362a2b; }
   </style>
 </head>
 
 <body>
+  <div class="toggle-container">
+    <label class="switch">
+      <input type="checkbox" id="mode-toggle">
+      <span class="slider-toggle"></span>
+    </label>
+    <span id="toggle-label">Curated Works Only</span>
+  </div>
+
   <div class="slider" id="slider"></div>
   
   <div class="buttons" id="buttons">
@@ -110,124 +80,116 @@
     const nextButton = document.getElementById("next");
     const prevButton = document.getElementById("prev");
     const buttonContainer = document.getElementById("buttons");
+    const modeToggle = document.getElementById("mode-toggle");
+    const toggleLabel = document.getElementById("toggle-label");
     
-    const auto = true;
     const intervalTime = 5000;
     let slideInterval;
-    let slides = [];
+    let allFetchedImages = []; // Stores all images
+    let isShowingAll = false; // Default is curated mode
 
-    // --- Synthesised Parameterization: Read folder from URL parameter ---
-    // Get the query parameters from the URL (e.g., carousel.html?folder=art)
     const urlParams = new URLSearchParams(window.location.search);
-    const folder = urlParams.get('folder') || ''; // Default to root if no folder parameter is specified
-    console.log(`Loading images from folder: "${folder}"`);
-    // ----------------------------------------------------------------------
+    const folder = urlParams.get('folder') || ''; 
 
-    // Fetch files directly from your GitHub repository, only from the specified folder path
-    async function loadDynamicImages() {
+    // 1. Initial Fetch
+    async function fetchImages() {
       try {
-        // Construct the correct path for GitHub API contents dynamic fetch
-        const apiPath = folder ? `${folder}/` : ''; // Add slash if folder specified
+        const apiPath = folder ? `${folder}/` : '';
         const apiUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/${apiPath}`;
         
-        // Fetch files from that specific dynamic URL
         const response = await fetch(apiUrl);
-        if (!response.ok) {
-            console.error(`Failed to fetch from: ${apiUrl}. Check folder parameter.`);
-            return;
-        }
+        if (!response.ok) return;
         const files = await response.json();
 
-        // 2. Filter out anything that isn't an image file
-        const images = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
-        console.log(`Found ${images.length} images in "${folder}" folder.`);
-
-        // 3. Randomize (shuffle) the order of the images for fresh display
-        for (let i = images.length - 1; i > 0; i--) {
+        // Save all valid images to our master array and shuffle them
+        allFetchedImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
+        
+        for (let i = allFetchedImages.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [images[i], images[j]] = [images[j], images[i]]; // Swap elements
+          [allFetchedImages[i], allFetchedImages[j]] = [allFetchedImages[j], allFetchedImages[i]];
         }
 
-        // 4. Inject each image into the HTML, ensuring correct sizing and color
-        images.forEach((img, index) => {
-          const slideDiv = document.createElement("div");
-          slideDiv.classList.add("slide");
-          
-          // Make the first image visible immediately
-          if (index === 0) slideDiv.classList.add("current");
-          
-          // Apply the background image dynamically - *CRITICAL:* use /contain #191919 shorthand here as well
-          // The containment ensures original size scaling without zoom for Notion, and background color fills empty space
-          // Use img.path to get the full path including folder (e.g., art/1.png) for image source
-          slideDiv.style.background = `url("${img.path}") no-repeat center top / contain #191919`;
-          slider.appendChild(slideDiv);
-        });
-
-        // 5. Start the carousel logic now that dynamic images exist
-        if (images.length > 0) {
-            initCarousel();
-        } else {
-            console.warn("No images found to display.");
-        }
-
+        renderCarousel(); // Build the UI
       } catch (error) {
-        console.error("Error loading dynamically parameterised images:", error);
+        console.error("Error loading images:", error);
       }
     }
 
-    // Carousel button/interval logic wrapped in a function
-    function initCarousel() {
-      slides = document.querySelectorAll(".slide");
-      
-      // If there are 1 or 0 images, hide the next/prev buttons and return
-      if (slides.length <= 1) {
+    // 2. Build the Slides based on the Toggle State
+    function renderCarousel() {
+      // Clear out the old slides and stop the timer
+      slider.innerHTML = "";
+      clearInterval(slideInterval);
+
+      // Filter logic: If 'isShowingAll' is false, only keep files with "_fav" in the name
+      const imagesToDisplay = isShowingAll 
+        ? allFetchedImages 
+        : allFetchedImages.filter(img => img.name.includes("_fav"));
+
+      if (imagesToDisplay.length === 0) {
+        slider.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.5;">No curated images found. Toggle 'Show All' to view library.</div>`;
         buttonContainer.style.display = "none";
         return;
       }
 
+      // Inject the filtered images
+      imagesToDisplay.forEach((img, index) => {
+        const slideDiv = document.createElement("div");
+        slideDiv.classList.add("slide");
+        if (index === 0) slideDiv.classList.add("current");
+        
+        slideDiv.style.background = `url("${img.path}") no-repeat center top / contain #362a2b`;
+        slider.appendChild(slideDiv);
+      });
+
+      // Restart logic
+      buttonContainer.style.display = imagesToDisplay.length > 1 ? "block" : "none";
+      if (imagesToDisplay.length > 1) {
+          initCarouselControls();
+      }
+    }
+
+    // 3. Carousel Motor
+    function initCarouselControls() {
+      const slides = document.querySelectorAll(".slide");
+      
       const nextSlide = () => {
         const current = document.querySelector(".current");
         current.classList.remove("current");
-        if (current.nextElementSibling) {
-          current.nextElementSibling.classList.add("current");
-        } else {
-          slides[0].classList.add("current");
-        }
+        if (current.nextElementSibling) current.nextElementSibling.classList.add("current");
+        else slides[0].classList.add("current");
       };
 
       const prevSlide = () => {
         const current = document.querySelector(".current");
         current.classList.remove("current");
-        if (current.previousElementSibling) {
-          current.previousElementSibling.classList.add("current");
-        } else {
-          slides[slides.length - 1].classList.add("current");
-        }
+        if (current.previousElementSibling) current.previousElementSibling.classList.add("current");
+        else slides[slides.length - 1].classList.add("current");
       };
 
-      nextButton.addEventListener("click", () => {
-        nextSlide();
-        if (auto) {
-          clearInterval(slideInterval);
-          slideInterval = setInterval(nextSlide, intervalTime);
-        }
+      // Remove old listeners to prevent double-clicking speeds
+      nextButton.replaceWith(nextButton.cloneNode(true));
+      prevButton.replaceWith(prevButton.cloneNode(true));
+      
+      document.getElementById("next").addEventListener("click", () => {
+        nextSlide(); clearInterval(slideInterval); slideInterval = setInterval(nextSlide, intervalTime);
+      });
+      document.getElementById("prev").addEventListener("click", () => {
+        prevSlide(); clearInterval(slideInterval); slideInterval = setInterval(nextSlide, intervalTime);
       });
 
-      prevButton.addEventListener("click", () => {
-        prevSlide();
-        if (auto) {
-          clearInterval(slideInterval);
-          slideInterval = setInterval(nextSlide, intervalTime);
-        }
-      });
-
-      if (auto) {
-        slideInterval = setInterval(nextSlide, intervalTime);
-      }
+      slideInterval = setInterval(nextSlide, intervalTime);
     }
 
-    // Kick off the loading process using synthesized logic
-    loadDynamicImages();
+    // 4. Listen for the Toggle Switch
+    modeToggle.addEventListener("change", (e) => {
+      isShowingAll = e.target.checked;
+      toggleLabel.innerText = isShowingAll ? "Showing All Artworks" : "Curated Works Only";
+      renderCarousel();
+    });
+
+    // Start
+    fetchImages();
   </script>
 </body>
 
