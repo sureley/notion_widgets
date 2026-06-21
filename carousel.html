@@ -85,13 +85,12 @@
     
     const intervalTime = 5000;
     let slideInterval;
-    let allFetchedImages = []; // Stores all images
-    let isShowingAll = false; // Default is curated mode
+    let allFetchedImages = []; 
+    let isShowingAll = false; // Default state is curated
 
     const urlParams = new URLSearchParams(window.location.search);
     const folder = urlParams.get('folder') || ''; 
 
-    // 1. Initial Fetch
     async function fetchImages() {
       try {
         const apiPath = folder ? `${folder}/` : '';
@@ -101,7 +100,6 @@
         if (!response.ok) return;
         const files = await response.json();
 
-        // Save all valid images to our master array and shuffle them
         allFetchedImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
         
         for (let i = allFetchedImages.length - 1; i > 0; i--) {
@@ -109,22 +107,22 @@
           [allFetchedImages[i], allFetchedImages[j]] = [allFetchedImages[j], allFetchedImages[i]];
         }
 
-        renderCarousel(); // Build the UI
+        renderCarousel(); 
       } catch (error) {
         console.error("Error loading images:", error);
       }
     }
 
-    // 2. Build the Slides based on the Toggle State
     function renderCarousel() {
-      // Clear out the old slides and stop the timer
       slider.innerHTML = "";
       clearInterval(slideInterval);
 
-      // Filter logic: If 'isShowingAll' is false, only keep files with "_fav" in the name
+      // --- THE LOGIC FLIP ---
+      // If showing all, keep everything. 
+      // If curated, only keep images that DO NOT (!) include "_fav" in their filename.
       const imagesToDisplay = isShowingAll 
         ? allFetchedImages 
-        : allFetchedImages.filter(img => img.name.includes("_fav"));
+        : allFetchedImages.filter(img => !img.name.includes("_fav"));
 
       if (imagesToDisplay.length === 0) {
         slider.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.5;">No curated images found. Toggle 'Show All' to view library.</div>`;
@@ -132,7 +130,6 @@
         return;
       }
 
-      // Inject the filtered images
       imagesToDisplay.forEach((img, index) => {
         const slideDiv = document.createElement("div");
         slideDiv.classList.add("slide");
@@ -142,14 +139,12 @@
         slider.appendChild(slideDiv);
       });
 
-      // Restart logic
       buttonContainer.style.display = imagesToDisplay.length > 1 ? "block" : "none";
       if (imagesToDisplay.length > 1) {
           initCarouselControls();
       }
     }
 
-    // 3. Carousel Motor
     function initCarouselControls() {
       const slides = document.querySelectorAll(".slide");
       
@@ -167,7 +162,6 @@
         else slides[slides.length - 1].classList.add("current");
       };
 
-      // Remove old listeners to prevent double-clicking speeds
       nextButton.replaceWith(nextButton.cloneNode(true));
       prevButton.replaceWith(prevButton.cloneNode(true));
       
@@ -181,14 +175,12 @@
       slideInterval = setInterval(nextSlide, intervalTime);
     }
 
-    // 4. Listen for the Toggle Switch
     modeToggle.addEventListener("change", (e) => {
       isShowingAll = e.target.checked;
       toggleLabel.innerText = isShowingAll ? "Showing All Artworks" : "Curated Works Only";
       renderCarousel();
     });
 
-    // Start
     fetchImages();
   </script>
 </body>
