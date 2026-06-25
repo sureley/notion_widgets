@@ -18,7 +18,6 @@
       font-family: "Lexend", sans-serif;
       background-color: #191919;
       color: #e5ebf3;
-      /* Ensure body takes full height so hover works everywhere */
       min-height: 100vh; 
     }
 
@@ -58,6 +57,28 @@
       opacity: 1;
     }
 
+    /* --- FILENAME BADGE --- */
+    .filename-badge {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(50, 50, 50, 0.8);
+      border: 1px solid #e5ebf3;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      pointer-events: none; /* Prevents the badge from blocking clicks */
+      z-index: 10;
+    }
+
+    /* Show the badge on hover, but ONLY for the currently visible slide */
+    body:hover .slide.current .filename-badge {
+      opacity: 1;
+    }
+
     /* --- ARROW BUTTONS --- */
     .buttons button#prev {
       position: absolute;
@@ -74,7 +95,6 @@
     }
 
     .buttons button {
-      /* #323232 with 80% opacity */
       background-color: rgba(50, 50, 50, 0.8); 
       border: 2px solid #e5ebf3;
       color: #e5ebf3;
@@ -95,7 +115,6 @@
       position: absolute;
       top: 20px;
       right: 20px;
-      /* #323232 with 80% opacity */
       background-color: rgba(50, 50, 50, 0.8);
       padding: 8px 12px;
       border-radius: 30px;
@@ -172,13 +191,11 @@
     let slideInterval;
     let allImages = []; 
     
-    // Read the folder parameter from the URL (e.g., ?folder=pictures)
     const urlParams = new URLSearchParams(window.location.search);
     const folder = urlParams.get('folder') || ''; 
 
     async function loadDynamicImages() {
       try {
-        // Dynamically build the API URL based on the folder parameter
         const apiPath = folder ? `${folder}/` : '';
         const apiUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/${apiPath}`;
         
@@ -221,6 +238,13 @@
         if (index === 0) slideDiv.classList.add("current");
         
         slideDiv.style.background = `url("${img.download_url || img.name}") no-repeat center top/contain`;
+        
+        // --- Inject the Filename Badge ---
+        const badgeDiv = document.createElement("div");
+        badgeDiv.classList.add("filename-badge");
+        badgeDiv.innerText = img.name; // Displays the exact filename from GitHub
+        slideDiv.appendChild(badgeDiv);
+        
         slider.appendChild(slideDiv);
       });
 
