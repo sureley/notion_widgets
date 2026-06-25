@@ -3,71 +3,149 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Curated Image Slider</title>
+  <title>CodePen - Full-Screen Responsive Image Slider</title>
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css'>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap");
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: "Lexend", sans-serif; background-color: #191919; color: #e5ebf3; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    .slider { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+    body {
+      font-family: "Lexend", sans-serif;
+      background-color: #191919;
+      color: #e5ebf3;
+      /* Ensure body takes full height so hover works everywhere */
+      min-height: 100vh; 
+    }
+
+    .slider {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
     .slide {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      opacity: 0; transition: opacity 0.4s ease-in-out;
-      background-size: contain !important; 
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 0.4s ease-in-out;
+      background-size: contain !important;
       background-color: #191919;
     }
-    .slide.current { opacity: 1; }
 
-    /* --- Toggle Switch UI --- */
+    .slide.current {
+      opacity: 1;
+    }
+
+    /* --- HOVER VISIBILITY LOGIC --- */
+    .buttons, .toggle-container {
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      z-index: 10;
+    }
+
+    /* When the mouse is anywhere on the screen, show the UI */
+    body:hover .buttons, 
+    body:hover .toggle-container {
+      opacity: 1;
+    }
+
+    /* --- ARROW BUTTONS --- */
+    .buttons button#prev {
+      position: absolute;
+      top: 50%;
+      left: 1rem;
+      transform: translateY(-50%);
+    }
+
+    .buttons button#next {
+      position: absolute;
+      top: 50%;
+      right: 1rem;
+      transform: translateY(-50%);
+    }
+
+    .buttons button {
+      /* #323232 with 80% opacity */
+      background-color: rgba(50, 50, 50, 0.8); 
+      border: 2px solid #e5ebf3;
+      color: #e5ebf3;
+      cursor: pointer;
+      padding: 13px 15px;
+      border-radius: 50%;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .buttons button:hover {
+      background-color: #e5ebf3;
+      color: #191919;
+    }
+
+    /* --- TOGGLE SWITCH CONTAINER --- */
     .toggle-container {
       position: absolute;
-      top: 1.5rem;
-      right: 1.5rem;
-      z-index: 100;
-      background: rgba(54, 42, 43, 0.8);
-      padding: 10px 15px;
-      border-radius: 8px;
+      top: 20px;
+      right: 20px;
+      /* #323232 with 80% opacity */
+      background-color: rgba(50, 50, 50, 0.8);
+      padding: 8px 12px;
+      border-radius: 30px;
       border: 1px solid #e5ebf3;
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 0.9rem;
     }
-    
-    .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider-toggle {
-      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #665c5d; transition: .4s; border-radius: 20px;
-    }
-    .slider-toggle:before {
-      position: absolute; content: ""; height: 14px; width: 14px;
-      left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
-    }
-    input:checked + .slider-toggle { background-color: #4CAF50; }
-    input:checked + .slider-toggle:before { transform: translateX(20px); }
 
-    .buttons button#prev { position: absolute; top: 50%; left: 1rem; z-index: 10; }
-    .buttons button#next { position: absolute; top: 50%; right: 1rem; z-index: 10; }
-    .buttons button {
-      border: 2px solid #e5ebf3; background-color: rgba(54, 42, 43, 0.5); color: #e5ebf3;
-      cursor: pointer; padding: 13px 15px; border-radius: 50%; outline: none; transition: 0.2s;
+    /* Toggle Switch CSS (No Text) */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 22px;
     }
-    .buttons button:hover { background-color: #e5ebf3; color: #191919; }
+    .switch input { 
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider-round {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #777;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider-round:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider-round {
+      background-color: #e5ebf3;
+    }
+    input:checked + .slider-round:before {
+      transform: translateX(22px);
+      background-color: #323232;
+    }
   </style>
 </head>
 
 <body>
-  <div class="toggle-container">
-    <label class="switch">
-      <input type="checkbox" id="mode-toggle">
-      <span class="slider-toggle"></span>
-    </label>
-    <span id="toggle-label">Curated Works Only</span>
-  </div>
-
   <div class="slider" id="slider"></div>
   
   <div class="buttons" id="buttons">
@@ -75,114 +153,138 @@
     <button id="next"><i class="fas fa-arrow-right"></i></button>
   </div>
 
+  <div class="toggle-container">
+    <label class="switch">
+      <input type="checkbox" id="fav-toggle">
+      <span class="slider-round"></span>
+    </label>
+  </div>
+
   <script>
     const slider = document.getElementById("slider");
     const nextButton = document.getElementById("next");
     const prevButton = document.getElementById("prev");
     const buttonContainer = document.getElementById("buttons");
-    const modeToggle = document.getElementById("mode-toggle");
-    const toggleLabel = document.getElementById("toggle-label");
+    const favToggle = document.getElementById("fav-toggle");
     
+    const auto = true;
     const intervalTime = 5000;
     let slideInterval;
-    let allFetchedImages = []; 
-    let isShowingAll = false; // Default state is curated
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const folder = urlParams.get('folder') || ''; 
-
-    async function fetchImages() {
+    let allImages = []; // Store all images here
+    
+    async function loadDynamicImages() {
       try {
-        const apiPath = folder ? `${folder}/` : '';
-        const apiUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/${apiPath}`;
-        
-        const response = await fetch(apiUrl);
-        if (!response.ok) return;
+        // Pointing to your art folder
+        const response = await fetch("https://api.github.com/repos/sureley/notion_widgets/contents/art");
         const files = await response.json();
 
-        allFetchedImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
-        
-        for (let i = allFetchedImages.length - 1; i > 0; i--) {
+        // Filter and store images
+        allImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
+
+        // Shuffle once at the beginning
+        for (let i = allImages.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [allFetchedImages[i], allFetchedImages[j]] = [allFetchedImages[j], allFetchedImages[i]];
+          [allImages[i], allImages[j]] = [allImages[j], allImages[i]];
         }
 
-        renderCarousel(); 
+        renderImages(); // Draw images to screen
       } catch (error) {
         console.error("Error loading images:", error);
       }
     }
 
-    function renderCarousel() {
+    function renderImages() {
+      // Clear current slides and reset intervals
       slider.innerHTML = "";
       clearInterval(slideInterval);
 
-      // --- THE LOGIC FLIP ---
-      // If showing all, keep everything. 
-      // If curated, only keep images that DO NOT (!) include "_fav" in their filename.
-      const imagesToDisplay = isShowingAll 
-        ? allFetchedImages 
-        : allFetchedImages.filter(img => !img.name.includes("_fav"));
+      // Check if toggle is active
+      const showOnlyFavs = favToggle.checked;
+      
+      // Filter list if toggle is on
+      const imagesToDisplay = showOnlyFavs 
+        ? allImages.filter(img => img.name.includes('_fav')) 
+        : allImages;
 
-      if (imagesToDisplay.length === 0) {
-        slider.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.5;">No curated images found. Toggle 'Show All' to view library.</div>`;
-        buttonContainer.style.display = "none";
-        return;
-      }
-
+      // Inject images into HTML
       imagesToDisplay.forEach((img, index) => {
         const slideDiv = document.createElement("div");
         slideDiv.classList.add("slide");
         if (index === 0) slideDiv.classList.add("current");
         
-        slideDiv.style.background = `url("${img.path}") no-repeat center top / contain #191919`;
+        // Use download_url to get the actual raw image from GitHub
+        slideDiv.style.background = `url("${img.download_url || img.name}") no-repeat center top/contain`;
         slider.appendChild(slideDiv);
       });
 
-      buttonContainer.style.display = imagesToDisplay.length > 1 ? "block" : "none";
-      if (imagesToDisplay.length > 1) {
-          initCarouselControls();
-      }
+      // Re-initialize carousel controls
+      initCarousel();
     }
 
-    function initCarouselControls() {
+    function initCarousel() {
       const slides = document.querySelectorAll(".slide");
       
+      if (slides.length <= 1) {
+        buttonContainer.style.display = "none";
+        return;
+      } else {
+        buttonContainer.style.display = "block";
+      }
+
       const nextSlide = () => {
         const current = document.querySelector(".current");
+        if(!current) return;
         current.classList.remove("current");
-        if (current.nextElementSibling) current.nextElementSibling.classList.add("current");
-        else slides[0].classList.add("current");
+        if (current.nextElementSibling) {
+          current.nextElementSibling.classList.add("current");
+        } else {
+          slides[0].classList.add("current");
+        }
       };
 
       const prevSlide = () => {
         const current = document.querySelector(".current");
+        if(!current) return;
         current.classList.remove("current");
-        if (current.previousElementSibling) current.previousElementSibling.classList.add("current");
-        else slides[slides.length - 1].classList.add("current");
+        if (current.previousElementSibling) {
+          current.previousElementSibling.classList.add("current");
+        } else {
+          slides[slides.length - 1].classList.add("current");
+        }
       };
 
-      nextButton.replaceWith(nextButton.cloneNode(true));
-      prevButton.replaceWith(prevButton.cloneNode(true));
-      
-      document.getElementById("next").addEventListener("click", () => {
-        nextSlide(); clearInterval(slideInterval); slideInterval = setInterval(nextSlide, intervalTime);
-      });
-      document.getElementById("prev").addEventListener("click", () => {
-        prevSlide(); clearInterval(slideInterval); slideInterval = setInterval(nextSlide, intervalTime);
+      // Remove old listeners to prevent double-firing when re-rendering
+      const newNext = nextButton.cloneNode(true);
+      const newPrev = prevButton.cloneNode(true);
+      nextButton.parentNode.replaceChild(newNext, nextButton);
+      prevButton.parentNode.replaceChild(newPrev, prevButton);
+
+      newNext.addEventListener("click", () => {
+        nextSlide();
+        if (auto) {
+          clearInterval(slideInterval);
+          slideInterval = setInterval(nextSlide, intervalTime);
+        }
       });
 
-      slideInterval = setInterval(nextSlide, intervalTime);
+      newPrev.addEventListener("click", () => {
+        prevSlide();
+        if (auto) {
+          clearInterval(slideInterval);
+          slideInterval = setInterval(nextSlide, intervalTime);
+        }
+      });
+
+      if (auto && slides.length > 1) {
+        slideInterval = setInterval(nextSlide, intervalTime);
+      }
     }
 
-    modeToggle.addEventListener("change", (e) => {
-      isShowingAll = e.target.checked;
-      toggleLabel.innerText = isShowingAll ? "Showing All Artworks" : "Curated Works Only";
-      renderCarousel();
-    });
+    // Re-render when the toggle is clicked
+    favToggle.addEventListener("change", renderImages);
 
-    fetchImages();
+    // Start
+    loadDynamicImages();
   </script>
 </body>
-
 </html>
