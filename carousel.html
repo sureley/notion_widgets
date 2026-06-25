@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>CodePen - Full-Screen Responsive Image Slider</title>
+  <title>Curated Image Slider</title>
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css'>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap");
@@ -170,54 +170,60 @@
     const auto = true;
     const intervalTime = 5000;
     let slideInterval;
-    let allImages = []; // Store all images here
+    let allImages = []; 
     
+    // Read the folder parameter from the URL (e.g., ?folder=pictures)
+    const urlParams = new URLSearchParams(window.location.search);
+    const folder = urlParams.get('folder') || ''; 
+
     async function loadDynamicImages() {
       try {
-        // Pointing to your art folder
-        const response = await fetch("https://api.github.com/repos/sureley/notion_widgets/contents/art");
+        // Dynamically build the API URL based on the folder parameter
+        const apiPath = folder ? `${folder}/` : '';
+        const apiUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/${apiPath}`;
+        
+        const response = await fetch(apiUrl);
+        if (!response.ok) return;
         const files = await response.json();
 
-        // Filter and store images
         allImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
 
-        // Shuffle once at the beginning
         for (let i = allImages.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [allImages[i], allImages[j]] = [allImages[j], allImages[i]];
         }
 
-        renderImages(); // Draw images to screen
+        renderImages(); 
       } catch (error) {
         console.error("Error loading images:", error);
       }
     }
 
     function renderImages() {
-      // Clear current slides and reset intervals
       slider.innerHTML = "";
       clearInterval(slideInterval);
 
-      // Check if toggle is active
       const showOnlyFavs = favToggle.checked;
       
-      // Filter list if toggle is on
       const imagesToDisplay = showOnlyFavs 
         ? allImages.filter(img => img.name.includes('_fav')) 
         : allImages;
 
-      // Inject images into HTML
+      if (imagesToDisplay.length === 0) {
+        slider.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.5;">No images found for this view.</div>`;
+        buttonContainer.style.display = "none";
+        return;
+      }
+
       imagesToDisplay.forEach((img, index) => {
         const slideDiv = document.createElement("div");
         slideDiv.classList.add("slide");
         if (index === 0) slideDiv.classList.add("current");
         
-        // Use download_url to get the actual raw image from GitHub
         slideDiv.style.background = `url("${img.download_url || img.name}") no-repeat center top/contain`;
         slider.appendChild(slideDiv);
       });
 
-      // Re-initialize carousel controls
       initCarousel();
     }
 
@@ -253,7 +259,6 @@
         }
       };
 
-      // Remove old listeners to prevent double-firing when re-rendering
       const newNext = nextButton.cloneNode(true);
       const newPrev = prevButton.cloneNode(true);
       nextButton.parentNode.replaceChild(newNext, nextButton);
@@ -280,10 +285,8 @@
       }
     }
 
-    // Re-render when the toggle is clicked
     favToggle.addEventListener("change", renderImages);
 
-    // Start
     loadDynamicImages();
   </script>
 </body>
