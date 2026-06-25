@@ -177,4 +177,138 @@
   </div>
 
   <script>
-    const slider = document.getElementById
+    const slider = document.getElementById("slider");
+    const nextButton = document.getElementById("next");
+    const prevButton = document.getElementById("prev");
+    const buttonContainer = document.getElementById("buttons");
+    const favToggle = document.getElementById("fav-toggle");
+    
+    const auto = true;
+    const intervalTime = 5000;
+    let slideInterval;
+    let allImages = []; 
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const folder = urlParams.get('folder') || ''; 
+
+    async function loadDynamicImages() {
+      try {
+        const apiPath = folder ? `${folder}/` : '';
+        const apiUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/${apiPath}`;
+        
+        const response = await fetch(apiUrl);
+        if (!response.ok) return;
+        const files = await response.json();
+
+        allImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
+
+        for (let i = allImages.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [allImages[i], allImages[j]] = [allImages[j], allImages[i]];
+        }
+
+        renderImages(); 
+      } catch (error) {
+        console.error("Error loading images:", error);
+      }
+    }
+
+    function renderImages() {
+      slider.innerHTML = "";
+      clearInterval(slideInterval);
+
+      // --- THE CORRECTED LOGIC ---
+      const isShowingAll = favToggle.checked; // True if toggle is ON
+      
+      const imagesToDisplay = isShowingAll 
+        ? allImages // If ON: Show everything
+        : allImages.filter(img => !img.name.includes('_fav')); // If OFF: Hide '_fav' files
+
+      if (imagesToDisplay.length === 0) {
+        slider.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.5;">No images found for this view.</div>`;
+        buttonContainer.style.display = "none";
+        return;
+      }
+
+      imagesToDisplay.forEach((img, index) => {
+        const slideDiv = document.createElement("div");
+        slideDiv.classList.add("slide");
+        if (index === 0) slideDiv.classList.add("current");
+        
+        slideDiv.style.background = `url("${img.download_url || img.name}") no-repeat center top/contain`;
+        
+        const badgeDiv = document.createElement("div");
+        badgeDiv.classList.add("filename-badge");
+        badgeDiv.innerText = img.name;
+        slideDiv.appendChild(badgeDiv);
+        
+        slider.appendChild(slideDiv);
+      });
+
+      initCarousel();
+    }
+
+    function initCarousel() {
+      const slides = document.querySelectorAll(".slide");
+      
+      if (slides.length <= 1) {
+        buttonContainer.style.display = "none";
+        return;
+      } else {
+        buttonContainer.style.display = "block";
+      }
+
+      const nextSlide = () => {
+        const current = document.querySelector(".current");
+        if(!current) return;
+        current.classList.remove("current");
+        if (current.nextElementSibling) {
+          current.nextElementSibling.classList.add("current");
+        } else {
+          slides[0].classList.add("current");
+        }
+      };
+
+      const prevSlide = () => {
+        const current = document.querySelector(".current");
+        if(!current) return;
+        current.classList.remove("current");
+        if (current.previousElementSibling) {
+          current.previousElementSibling.classList.add("current");
+        } else {
+          slides[slides.length - 1].classList.add("current");
+        }
+      };
+
+      const newNext = nextButton.cloneNode(true);
+      const newPrev = prevButton.cloneNode(true);
+      nextButton.parentNode.replaceChild(newNext, nextButton);
+      prevButton.parentNode.replaceChild(newPrev, prevButton);
+
+      newNext.addEventListener("click", () => {
+        nextSlide();
+        if (auto) {
+          clearInterval(slideInterval);
+          slideInterval = setInterval(nextSlide, intervalTime);
+        }
+      });
+
+      newPrev.addEventListener("click", () => {
+        prevSlide();
+        if (auto) {
+          clearInterval(slideInterval);
+          slideInterval = setInterval(nextSlide, intervalTime);
+        }
+      });
+
+      if (auto && slides.length > 1) {
+        slideInterval = setInterval(nextSlide, intervalTime);
+      }
+    }
+
+    favToggle.addEventListener("change", renderImages);
+
+    loadDynamicImages();
+  </script>
+</body>
+</html>
