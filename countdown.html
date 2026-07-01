@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Countdown</title>
+    <style>
+        /* Matches Notion's default font stack */
+        body {
+            font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: transparent; 
+            color: #37352f; /* Notion light mode text */
+            overflow: hidden;
+        }
+        /* Auto-adapts to dark mode */
+        @media (prefers-color-scheme: dark) {
+            body {
+                color: rgba(255, 255, 255, 0.81);
+            }
+        }
+        .countdown-container {
+            display: flex;
+            gap: 20px;
+            text-align: center;
+        }
+        .time-box {
+            display: flex;
+            flex-direction: column;
+            min-width: 50px;
+        }
+        .number {
+            font-size: 2.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+        .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #787774;
+            margin-top: 4px;
+        }
+        @media (prefers-color-scheme: dark) {
+            .label { color: rgba(255, 255, 255, 0.44); }
+        }
+    </style>
+</head>
+<body>
+    <div class="countdown-container" id="timer">
+        <div style="font-size: 1rem; color: #787774;">Loading timer...</div>
+    </div>
+
+    <script>
+        // 1. Grab the date from the URL (e.g., ?date=2027-09-01T00:00)
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+
+        // 2. Set the target date (defaults to a sample date if none is provided in the URL)
+        const targetDateString = dateParam ? dateParam : '2027-09-01T00:00:00';
+        const countDownDate = new Date(targetDateString).getTime();
+
+        const timerElement = document.getElementById("timer");
+
+        // 3. Update the timer every second
+        const updateTimer = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = countDownDate - now;
+
+            // If the countdown is over
+            if (distance < 0) {
+                clearInterval(updateTimer);
+                timerElement.innerHTML = "<div class='number'>00:00:00</div>";
+                return;
+            }
+
+            // Time calculations
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            // Output the result
+            timerElement.innerHTML = `
+                <div class="time-box"><span class="number">${days}</span><span class="label">Days</span></div>
+                <div class="time-box"><span class="number">${hours.toString().padStart(2, '0')}</span><span class="label">Hrs</span></div>
+                <div class="time-box"><span class="number">${minutes.toString().padStart(2, '0')}</span><span class="label">Min</span></div>
+                <div class="time-box"><span class="number">${seconds.toString().padStart(2, '0')}</span><span class="label">Sec</span></div>
+            `;
+        }, 1000);
+    </script>
+</body>
+</html>
