@@ -191,6 +191,14 @@
     const urlParams = new URLSearchParams(window.location.search);
     const folder = urlParams.get('folder') || ''; 
 
+    // Isolated shuffle function so we can reuse it mid-session
+    function shuffleImages() {
+      for (let i = allImages.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allImages[i], allImages[j]] = [allImages[j], allImages[i]];
+      }
+    }
+
     async function loadDynamicImages() {
       try {
         const apiPath = folder ? `${folder}/` : '';
@@ -202,11 +210,7 @@
 
         allImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
 
-        for (let i = allImages.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [allImages[i], allImages[j]] = [allImages[j], allImages[i]];
-        }
-
+        shuffleImages();
         renderImages(); 
       } catch (error) {
         console.error("Error loading images:", error);
@@ -217,12 +221,11 @@
       slider.innerHTML = "";
       clearInterval(slideInterval);
 
-      // --- THE CORRECTED LOGIC ---
-      const isShowingAll = favToggle.checked; // True if toggle is ON
+      const isShowingAll = favToggle.checked; 
       
       const imagesToDisplay = isShowingAll 
-        ? allImages // If ON: Show everything
-        : allImages.filter(img => !img.name.includes('_fav')); // If OFF: Hide '_fav' files
+        ? allImages 
+        : allImages.filter(img => !img.name.includes('_fav')); 
 
       if (imagesToDisplay.length === 0) {
         slider.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; opacity:0.5;">No images found for this view.</div>`;
@@ -262,10 +265,15 @@
         const current = document.querySelector(".current");
         if(!current) return;
         current.classList.remove("current");
+        
+        // If there's another image next, go to it
         if (current.nextElementSibling) {
           current.nextElementSibling.classList.add("current");
         } else {
-          slides[0].classList.add("current");
+          // FIX: Reached the end of the current playlist! 
+          // Shuffle everything behind the scenes and reload a brand new random sequence.
+          shuffleImages();
+          renderImages();
         }
       };
 
