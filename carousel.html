@@ -176,7 +176,7 @@
     </label>
   </div>
 
-  <script>
+<script>
     const slider = document.getElementById("slider");
     const nextButton = document.getElementById("next");
     const prevButton = document.getElementById("prev");
@@ -188,8 +188,9 @@
     let slideInterval;
     let allImages = []; 
     
+    // Grab the base folder name from the Notion URL (e.g., "art")
     const urlParams = new URLSearchParams(window.location.search);
-    const folder = urlParams.get('folder') || ''; 
+    const baseFolder = urlParams.get('folder') || ''; 
 
     function shuffleImages() {
       for (let i = allImages.length - 1; i > 0; i--) {
@@ -200,14 +201,51 @@
 
     async function loadDynamicImages() {
       try {
-        const apiPath = folder ? `${folder}/` : '';
-        const apiUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/${apiPath}`;
+        let foldersToFetch = [baseFolder];
         
-        const response = await fetch(apiUrl);
-        if (!response.ok) return;
-        const files = await response.json();
+        if (baseFolder) {
+            // Scan the root of the GitHub repo to find auto-generated folders (art, art2, art3)
+            const rootUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/`;
+            const rootResponse = await fetch(rootUrl);
+            
+            if (rootResponse.ok) {
+                const rootContents = await rootResponse.json();
+                
+                // Regex looks for the base name followed by any numbers
+                const regex = new RegExp(`^${baseFolder}\\d*$`); 
+                const matchedFolders = rootContents
+                    .filter(item => item.type === 'dir' && regex.test(item.name))
+                    .map(item => item.name);
+                
+                if (matchedFolders.length > 0) {
+                    foldersToFetch = matchedFolders;
+                }
+            }
+        }
 
-        allImages = files.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
+        let combinedFiles = [];
+
+        // Fetch images from all discovered folders concurrently
+        const fetchPromises = foldersToFetch.map(async (folderName) => {
+          const apiPath = folderName ? `${folderName}/` : '';
+          const apiUrl = `https://api.github.com/repos/sureley/notion_widgets/contents/${apiPath}`;
+          
+          const response = await fetch(apiUrl);
+          if (response.ok) {
+            return await response.json();
+          }
+          return []; 
+        });
+
+        const results = await Promise.all(fetchPromises);
+        
+        results.forEach(files => {
+          if (Array.isArray(files)) {
+            combinedFiles = combinedFiles.concat(files);
+          }
+        });
+
+        allImages = combinedFiles.filter(file => file.name.match(/\.(png|jpe?g|gif|webp)$/i));
 
         shuffleImages();
         renderImages(); 
@@ -216,17 +254,14 @@
       }
     }
 
-    // --- CAROUSEL NAVIGATION LOGIC ---
     function nextSlide() {
       const current = document.querySelector(".current");
       if (!current) return;
-
       current.classList.remove("current");
       
       if (current.nextElementSibling) {
         current.nextElementSibling.classList.add("current");
       } else {
-        // Reached the end, reshuffle and re-render seamlessly
         shuffleImages();
         renderImages();
       }
@@ -235,28 +270,25 @@
     function prevSlide() {
       const current = document.querySelector(".current");
       if (!current) return;
-
       current.classList.remove("current");
 
       if (current.previousElementSibling) {
         current.previousElementSibling.classList.add("current");
       } else {
-        // Wrap to the last child dynamically
         slider.lastElementChild.classList.add("current");
       }
     }
 
     function startAutoPlay() {
-      clearInterval(slideInterval); // Always clear the old timer first to prevent double-speed glitches
+      clearInterval(slideInterval);
       if (auto && slider.children.length > 1) {
         slideInterval = setInterval(nextSlide, intervalTime);
       }
     }
 
-    // --- EVENT LISTENERS (BOUND ONLY ONCE) ---
     nextButton.addEventListener("click", () => {
       nextSlide();
-      startAutoPlay(); // Resets the timer so it doesn't skip immediately after clicking
+      startAutoPlay();
     });
 
     prevButton.addEventListener("click", () => {
@@ -266,9 +298,8 @@
 
     favToggle.addEventListener("change", renderImages);
 
-    // --- RENDER LOGIC ---
     function renderImages() {
-      slider.innerHTML = ""; // Clear existing images
+      slider.innerHTML = ""; 
       
       const isShowingAll = favToggle.checked; 
       
@@ -298,14 +329,13 @@
         slider.appendChild(slideDiv);
       });
 
-      // Show or hide buttons based on how many images exist
       if (imagesToDisplay.length <= 1) {
         buttonContainer.style.display = "none";
       } else {
         buttonContainer.style.display = "block";
       }
 
-      startAutoPlay(); // Kick off the timer
+      startAutoPlay();
     }
 
     loadDynamicImages();
